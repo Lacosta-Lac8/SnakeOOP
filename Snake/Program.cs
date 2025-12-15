@@ -10,11 +10,16 @@ class Program
         Console.SetBufferSize(width + 5, height + 3);
 
         var snake = new Snake.Class.Snake(width / 2, height / 2);
-        var food = new Food(width, height);
         IInputHandler inputHandler = new ConsoleInputHandler();
         IGameRenderer renderer = new ConsoleGameRenderer();
+        FoodManager foodManager = new FoodManager(width, height);
 
-        GameEngine game = new GameEngine(snake, food, inputHandler, renderer);
+        int baseSpeed = 300;
+        int accelerationStep = 50;
+        int minSpeed = 10;
+        GameSpeedManager speedManager = new GameSpeedManager(baseSpeed, accelerationStep, minSpeed);
+
+        GameEngine game = new GameEngine(snake, inputHandler, renderer, foodManager, width, height, speedManager);
         game.RunGameLoop();
     }
 }

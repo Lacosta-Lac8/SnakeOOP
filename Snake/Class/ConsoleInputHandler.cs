@@ -9,7 +9,12 @@ namespace Snake.Class
     {
         public ConsoleKeyInfo? GetInput()
         {
-            return Console.KeyAvailable ? Console.ReadKey(true) : (ConsoleKeyInfo?)null;
+            ConsoleKeyInfo? currentInput = null;
+            while (Console.KeyAvailable)
+            {
+                currentInput = Console.ReadKey(true);
+            }
+            return currentInput;
         }
     }
 }

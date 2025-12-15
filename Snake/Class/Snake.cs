@@ -11,14 +11,35 @@ namespace Snake.Class
         public int x => Body.First().x;
         public int y => Body.First().y;
         public char symbol => 'o';
-
         public int Dx { get; private set; } = 1;
         public int Dy { get; private set; } = 0;
         private ConsoleKey lastMove = ConsoleKey.RightArrow;
+        public ConsoleColor Color => ConsoleColor.DarkGreen;
 
-        public Snake(int startx, int starty)
+        public Snake(int startx, int starty) => Body.Add((startx, starty));
+
+        public (bool Collides, (int x, int y)? HitPosition) WillCollideWithFood(Food food)
         {
-            Body.Add((startx, starty));
+            int nextx = x + Dx;
+            int nexty = y + Dy;
+            var hitPos = food.Positions.SingleOrDefault(p => p.x == nextx && p.y == nexty);
+            bool collides = food.Positions.Any(p => p.x == nextx && p.y == nexty);
+
+            if (collides)
+                return (true, (nextx, nexty));
+            return (false, null);
+        }
+
+        public bool CheckCollision(int width, int height)
+        {
+            if (x <= 0 || x >= width - 1 || y <= 0 || y >= height - 1)
+                return true;
+
+            if (Body.Skip(1).Any(b => b.x == x && b.y == y))
+                return true;
+
+
+            return false;
         }
 
         public void ChangeDirection(ConsoleKeyInfo? keyInfo)
@@ -56,23 +77,9 @@ namespace Snake.Class
             }
         }
 
-        public bool CheckCollision(int width, int height)
+        public bool CheckCollisionWithSelf()
         {
-            if (x <= 0 || x >= width - 1 || y <= 0 || y >= height - 1)
-                return true;
-
-            if (Body.Skip(1).Any(b => b.x == x && b.y == y))
-                return true;
-            
-
-            return false;
-        }
-
-        public bool WillCollideWithFood(Food food)
-        {
-            int nextx = x + Dx;
-            int nexty = y + Dy;
-            return nextx == food.x && nexty == food.y;
+            return Body.Skip(1).Any(p => p.x == x && p.y == y);
         }
     }
 }
