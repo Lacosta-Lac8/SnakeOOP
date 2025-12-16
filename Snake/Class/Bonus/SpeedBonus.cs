@@ -12,7 +12,7 @@ namespace Snake.Class.Bonus
         public char Symbol => 'S';
         public ConsoleColor Color => ConsoleColor.Cyan;
 
-        public void Apply(GameEngine engine) => engine.DefaultSleep /= 2;
-        public void Revert(GameEngine engine) => engine.DefaultSleep *= 2;
+        public void Apply(GameEngine engine) => engine.speedManager.AddModifier(0.5);
+        public void Revert(GameEngine engine) => engine.speedManager.RemoveModifier(0.5);
     }
 }

@@ -12,7 +12,7 @@ namespace Snake.Class
         private readonly Snake snake;
         private readonly IInputHandler inputHandler;
         private readonly IGameRenderer renderer;
-        private readonly GameSpeedManager speedManager;
+        public GameSpeedManager speedManager { get; private set; }
         private bool gameOver = false;
         private bool isGameWon = false;
         private int width = 40, height = 20;
@@ -21,6 +21,8 @@ namespace Snake.Class
         private readonly int maxScore;
         public int DefaultSleep { get; set;} = 300;
         private readonly FoodManager foodManager;
+        private DateTime? nextBonusSpawnTime = null;
+        private readonly int bonusRespawnDelayMs = 3000;
 
         private class ActiveBonus
         {
@@ -62,19 +64,39 @@ namespace Snake.Class
 
             while (!gameOver)
             {
-                EraseSnake();
+                var tail = snake.Body.Last();
+                renderer.RenderObject(tail.x, tail.y, " ");
 
                 int actualSleepTime = speedManager.CalculateActuslSleepTime(score, snake.Dy != 0);
 
                 var input = inputHandler.GetInput();
                 snake.ChangeDirection(input);
 
-                foodManager.RemoveExpiredFood(renderer);
-                CheckExpiredBonuses();
-
                 var nextx = snake.x + snake.Dx;
                 var nexty = snake.y + snake.Dy;
+
+                if (nextx <= 0 || nextx >= width - 1 || nexty <= 0 || nexty >= height - 1 ||
+                    snake.Body.Any(p => p.x == nextx && p.y == nexty))
+                {
+                    gameOver = true;
+                    isGameWon = false;
+                    break;
+                }
+                
+                if (foodManager.RemoveExpiredFood(renderer))
+                {
+                    nextBonusSpawnTime = DateTime.Now.AddMilliseconds(bonusRespawnDelayMs);
+                }
+                CheckExpiredBonuses();
+
+                if (nextBonusSpawnTime.HasValue && DateTime.Now >= nextBonusSpawnTime.Value)
+                {
+                    foodManager.GenerateNewBonusFood(snake.Body);
+                    nextBonusSpawnTime = null;
+                }
+
                 var eatenFood = foodManager.CheckCollision(nextx, nexty);
+                bool willGrow = false;
 
                 if (eatenFood != null)
                 {
@@ -84,38 +106,32 @@ namespace Snake.Class
                     {
                         eatenFood.Bonus.Apply(this);
                         if (eatenFood.Bonus.DurationMs > 0)
-                        {
                             activeBonuses.Add(new ActiveBonus(eatenFood.Bonus));
-                        }
-                        score += 10;
-                        foodManager.GenerateNewBonusFood(snake.Body);
+                        nextBonusSpawnTime = DateTime.Now.AddMilliseconds(bonusRespawnDelayMs);
                     }
                     else if (eatenFood.Simple != null)
                     {
-                        GrowSnake(1);
+                        willGrow = true;
                         score += 10;
                         foodManager.GenerateNewSimpleFood(snake.Body);
                     }
                     foodManager.RemoveFood(eatenFood);
                 }
 
-                snake.Move(false);
-
-                if (snake.x <= 0 || snake.x >= width - 1 || snake.y <= 0 || snake.y >= height - 1 || snake.CheckCollisionWithSelf())
-                {
-                    gameOver = true;
-                    isGameWon = false;
-
-                }
+                snake.Move(willGrow);
 
                 if (score >= maxScore && !gameOver)
                 {
                     gameOver = true;
                     isGameWon = true;
+                    break;
                 }
 
-                DrawGameObjects();
+                RedrawSnake();
+                foodManager.Draw(renderer);
                 DrawScore();
+
+                CheckExpiredBonuses();
 
                 Thread.Sleep(actualSleepTime);
             }
@@ -129,6 +145,19 @@ namespace Snake.Class
             else
             {
                 GameOverScreen();
+            }
+        }
+
+        public void RedrawSnake()
+        {
+            foreach (var part in snake.Body)
+            {
+                renderer.RenderObject(
+                    part.x,
+                    part.y,
+                    snake.symbol.ToString(),
+                    snake.Color
+                    );
             }
         }
 

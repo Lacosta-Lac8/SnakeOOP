@@ -43,14 +43,22 @@ namespace Snake.Class
             activeFoods.Add(newFood);
         }
 
-        public void RemoveExpiredFood(IGameRenderer renderer)
+        public bool RemoveExpiredFood(IGameRenderer renderer)
         {
             var expired = activeFoods.Where(f => f.ExpiryTime.HasValue && DateTime.Now > f.ExpiryTime.Value).ToList();
+            bool bonusRemoved = false;
+
             foreach (var food in expired)
             {
                 EraseSingleFood(renderer, food);
                 activeFoods.Remove(food);
+
+                if (food.Bonus != null)
+                {
+                    bonusRemoved = true;
+                }
             }
+            return bonusRemoved;
         }
 
         public void EraseSingleFood(IGameRenderer renderer, Food foodItem)

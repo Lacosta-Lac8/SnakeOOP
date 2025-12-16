@@ -9,6 +9,7 @@ namespace Snake.Class
         private readonly int baseSleepTime;
         private readonly int accelerationStep;
         private readonly int minSleepTime;
+        private readonly List<double> modifiers = new List<double>();
 
         public GameSpeedManager(int baseSleepTime, int accelerationStep, int minSleepTime = 10)
         {
@@ -16,6 +17,9 @@ namespace Snake.Class
             this.accelerationStep = accelerationStep;
             this.minSleepTime = minSleepTime;
         }
+
+        public void AddModifier(double multiplier) => modifiers.Add(multiplier);
+        public void RemoveModifier(double multiplier) => modifiers.Remove(multiplier);
 
         public int CalculateActuslSleepTime(int score, bool isVerticalMovement)
         {
@@ -29,11 +33,17 @@ namespace Snake.Class
                 _ => baseSleepTime - accelerationStep * 5
             };
 
-            int actualSleepTime = Math.Max(minSleepTime, desiredSleepTime);
+            double totalMultiplier = 1.0;
+            foreach (var mod in modifiers)
+            {
+                totalMultiplier *= mod;
+            }
 
-            if (isVerticalMovement)
-                actualSleepTime *= 2;
-            return actualSleepTime;
+            double finalSleep = desiredSleepTime * totalMultiplier;
+
+
+            int result = Math.Max(minSleepTime, (int)finalSleep);
+            return isVerticalMovement ? result * 2 : result;
         }
     }
 }
